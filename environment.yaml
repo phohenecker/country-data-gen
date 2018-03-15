@@ -28,7 +28,6 @@
 name: country-data-gen
 dependencies:
   - python>=3
-  - PyYAML>=3.12
   - pip:
     - insanity>=2017.1
     - streamtologger>=2017.1

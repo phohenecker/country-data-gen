@@ -54,7 +54,6 @@ setup(
         install_requires=[
                 "argmagic>=2017.1",
                 "insanity>=2017.1",
-                "PyYAML>=3.12",
                 "reldata>=2017.1",
                 "streamtologger>=2017.1"
         ],
