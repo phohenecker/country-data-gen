@@ -51,7 +51,12 @@ setup(
         copyright="Copyright (c) 2018 Patrick Hohenecker",
         data_files=[(".", ["LICENSE", "README.md"])],
         description="A dataset generator for the countries data.",
-        install_requires=[],
+        install_requires=[
+                "argmagic>=2017.1",
+                "insanity>=2017.1",
+                "PyYAML>=3.12",
+                "streamtologger>=2017.1"
+        ],
         license="MIT License",
         long_description=long_description,
         name="countries",
