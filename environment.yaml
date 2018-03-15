@@ -33,3 +33,4 @@ dependencies:
     - insanity>=2017.1
     - streamtologger>=2017.1
     - git+https://github.com/phohenecker/arg-magic
+    - git+ssh://git@git.paho.at:22022/phohenecker/rel-data.git
