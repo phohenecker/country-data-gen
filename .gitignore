@@ -21,6 +21,9 @@
 #  SOFTWARE.
 
 
+# default output directory
+out
+
 ### MAC
 **/.DS_Store
 **/._*
