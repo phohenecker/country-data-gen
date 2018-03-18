@@ -4,6 +4,7 @@
 """Runs the generator with the configuration specified by the command line args."""
 
 
+import collections
 import json
 import os
 import random
@@ -14,7 +15,12 @@ import urllib.request
 import argmagic
 import streamtologger
 
+from reldata.io import kg_writer
+
 from countries import config
+from countries import country
+from countries import dataset
+from countries import dataset_generator as data_gen
 
 
 __author__ = "Patrick Hohenecker"
@@ -69,8 +75,14 @@ ISO_CODE_KEY = "cca3"
 NEIGHBORS_KEY = "borders"
 """str: The key that is used to store a country's neighbors in the data file."""
 
+REGION_KEY = "region"
+"""str: The key that is used to store a country's region in the data file."""
 
-def _load_data(path: str) -> typing.Dict[str, typing.List[str]]:
+SUBREGION_KEY = "subregion"
+"""str: The key that is used to store a country's subregion in the data file."""
+
+
+def _load_data(path: str) -> typing.Dict[str, country.Country]:
     """Loads the raw data from the provided path.
 
     The path is supposed to point to a JSON file that specifies countries and regions in the format that is used in
@@ -84,8 +96,21 @@ def _load_data(path: str) -> typing.Dict[str, typing.List[str]]:
     with open(path, "r") as f:
         data = json.load(f)
     
-    # assemble a dictionary that maps from (ISO code) names to lists of neighbors
-    return dict(((country[ISO_CODE_KEY], country[NEIGHBORS_KEY]) for country in data))
+    # assemble a dictionary that maps from (ISO code) names to instances of country.Country
+    return collections.OrderedDict(
+            (
+                    (
+                            c[ISO_CODE_KEY],
+                            country.Country(
+                                    c[ISO_CODE_KEY],
+                                    c[NEIGHBORS_KEY],
+                                    c[REGION_KEY],
+                                    None if not c[SUBREGION_KEY] else c[SUBREGION_KEY]
+                            )
+                    )
+                    for c in data
+            )
+    )
 
 
 def _print_config(conf: config.Config) -> None:
@@ -112,6 +137,48 @@ def _print_config(conf: config.Config) -> None:
         print(("{:" + str(max_name_len) + "} : {}").format(name, value))
     print(h_line)
     print()
+
+
+def _write_data(datasets: typing.List[dataset.Dataset], output_dir: str) -> None:
+    """Writes the provided datasets to disk.
+    
+    Args:
+        datasets (list[:class:`dataset.Dataset`]): A list of all datasets to write.
+        output_dir (str): The path of the output directory.
+    """
+    output_dir_pattern = "{:0" + str(len(str(len(datasets) - 1))) + "d}"
+    for idx, ds in enumerate(datasets):
+    
+        # assemble needed paths
+        ds_output_dir = os.path.join(output_dir, output_dir_pattern.format(idx))
+        train_dir = os.path.join(ds_output_dir, "train")
+        dev_dir = os.path.join(ds_output_dir, "dev")
+        test_dir = os.path.join(ds_output_dir, "test")
+    
+        print("writing dataset to '{}'...".format(ds_output_dir))
+    
+        # create folder structure for storing the current dataset
+        if not os.path.isdir(ds_output_dir):
+            os.mkdir(ds_output_dir)
+        if not os.path.isdir(train_dir):
+            os.mkdir(train_dir)
+        if not os.path.isdir(dev_dir):
+            os.mkdir(dev_dir)
+        if not os.path.isdir(test_dir):
+            os.mkdir(test_dir)
+    
+        # write dev sample to disk
+        kg_writer.KgWriter.write(ds.dev, dev_dir, "dev")
+    
+        # write test sample to disk
+        kg_writer.KgWriter.write(ds.test, test_dir, "test")
+        
+        # write training samples to disk
+        sample_filename_pattern = "{:0" + str(len(str(len(ds.train) - 1))) + "d}"
+        for sample_idx, sample in enumerate(ds.train):
+            kg_writer.KgWriter.write(sample, train_dir, sample_filename_pattern.format(sample_idx))
+    
+        print("OK")
 
 
 def main(conf: config.Config):
@@ -159,7 +226,21 @@ def main(conf: config.Config):
     print("found data about {} countries".format(len(data)))
     print("OK\n")
     
-    # TODO: invoke dataset generator
+    # invoke dataset generator to create the required datasets
+    print(
+            "generating {} dataset{} with {} training sample{}".format(
+                    conf.num_datasets,
+                    "s" if conf.num_datasets > 1 else "",
+                    conf.num_training_samples,
+                    "s" if conf.num_training_samples > 1 else ""
+            )
+    )
+    generator = data_gen.DatasetGenerator(data, conf.setting)
+    datasets = generator.generate_datasets(conf.num_datasets, conf.num_training_samples)
+    print("OK\n")
+    
+    # write datasets to disk
+    _write_data(datasets, conf.output_dir)
     
 
 main(argmagic.parse_args(config.Config, app_name=APP_NAME, app_description=APP_DESCRIPTION))
