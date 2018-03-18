@@ -8,6 +8,8 @@ import insanity
 
 from argmagic import decorators
 
+from countries import problem_setting
+
 
 __author__ = "Patrick Hohenecker"
 __copyright__ = (
@@ -54,6 +56,9 @@ class Config(object):
     DEFAULT_QUIET = False
     """bool: Default value of attribute :attr:`quiet`."""
     
+    DEFAULT_SETTING = problem_setting.ProblemSetting.S1.value
+    """str: Default value of attribute :attr:`setting`."""
+    
     #  CONSTRUCTOR  ####################################################################################################
     
     def __init__(self):
@@ -65,6 +70,7 @@ class Config(object):
         self._output_dir = self.DEFAULT_OUTPUT_DIR
         self._quiet = self.DEFAULT_QUIET
         self._seed = None
+        self._setting = self.DEFAULT_SETTING
 
     #  PROPERTIES  #####################################################################################################
     
@@ -132,3 +138,15 @@ class Config(object):
     def seed(self, seed: int) -> None:
         insanity.sanitize_type("seed", seed, int)
         self._seed = seed
+    
+    @decorators.exhaustive(problem_setting.ProblemSetting)
+    @property
+    def setting(self) -> str:
+        """str: The considered problem setting, which has to one of S1, S2, and S3."""
+        return self._setting
+    
+    @setting.setter
+    def setting(self, setting: str) -> None:
+        setting = str(setting)
+        insanity.sanitize_value("setting", setting, [s.value for s in problem_setting.ProblemSetting])
+        self._setting = setting
