@@ -21,6 +21,7 @@ from countries import config
 from countries import country
 from countries import dataset
 from countries import dataset_generator as data_gen
+from countries.asp import dlv_solver
 
 
 __author__ = "Patrick Hohenecker"
@@ -68,6 +69,9 @@ DATA_URL = "https://raw.githubusercontent.com/mledoze/countries/master/countries
 LOG_FILE_NAME = "out.log"
 """str: The filename of the created log file."""
 
+ONTOLOGY = "src/main/resources/countries.asp"
+"""str: The path to the ASP program that describes the used ontology."""
+
 
 ISO_CODE_KEY = "cca3"
 """str: The key that is used to store the ISO 3166-1 alpha-3 code for countries, e.g., 'AUT', in the data file."""
@@ -96,14 +100,17 @@ def _load_data(path: str) -> typing.Dict[str, country.Country]:
     with open(path, "r") as f:
         data = json.load(f)
     
+    # create mapping from ISO codes to actual (readable) names
+    names = {c[ISO_CODE_KEY]: c["name"]["official"] for c in data}
+    
     # assemble a dictionary that maps from (ISO code) names to instances of country.Country
     return collections.OrderedDict(
             (
                     (
-                            c[ISO_CODE_KEY],
+                            names[c[ISO_CODE_KEY]],
                             country.Country(
                                     c[ISO_CODE_KEY],
-                                    c[NEIGHBORS_KEY],
+                                    [names[n] for n in c[NEIGHBORS_KEY]],
                                     c[REGION_KEY],
                                     None if not c[SUBREGION_KEY] else c[SUBREGION_KEY]
                             )
@@ -235,7 +242,7 @@ def main(conf: config.Config):
                     "s" if conf.num_training_samples > 1 else ""
             )
     )
-    generator = data_gen.DatasetGenerator(data, conf.setting)
+    generator = data_gen.DatasetGenerator(data, conf.setting, dlv_solver.DlvSolver(conf.dlv), ONTOLOGY)
     datasets = generator.generate_datasets(conf.num_datasets, conf.num_training_samples)
     print("OK\n")
     
