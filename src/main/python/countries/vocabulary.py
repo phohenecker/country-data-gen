@@ -42,8 +42,8 @@ CLASS_REGION = "region"
 CLASS_SUBREGION = "subregion"
 """str: The name of the class that is used to represent subregions."""
 
-RELATION_LOCATED_IN = "located_in"
+RELATION_LOCATED_IN = "locatedIn"
 """str: The name of the relation that is used to describe a located-in-relationship."""
 
-RELATION_NEIGHBOR_OF = "neighbor_of"
+RELATION_NEIGHBOR_OF = "neighborOf"
 """str: The name of the relation that is used to describe the neighborhood of countries."""
