@@ -81,4 +81,5 @@ neighborOf(C2, C1)  :- neighborOf(C1, C2)  .
 ~neighborOf(C2, C1) :- ~neighborOf(C1, C2) .
 
 % all neighborOf relations are specified explicitly (at least one direction)
-~neighborOf(C1, C2) :- country(C1), country(C2), C1!=C2, not neighborOf(C1, C2) .
+% -> REMOVED TEMPORARILY: we only reason over the relation locatedIn
+% ~neighborOf(C1, C2) :- country(C1), country(C2), C1!=C2, not neighborOf(C1, C2) .
