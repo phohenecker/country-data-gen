@@ -3,13 +3,17 @@
 
 import collections
 import itertools
+import os
 import random
+import re
 import typing
 
 import insanity
+import unidecode
 
 from reldata import data_context as dc
 from reldata.data import class_membership
+from reldata.data import individual
 from reldata.data import individual_factory as ind_fac
 from reldata.data import knowledge_graph as kg
 from reldata.data import triple
@@ -20,6 +24,8 @@ from countries import country
 from countries import dataset
 from countries import problem_setting as ps
 from countries import vocabulary as voc
+from countries.asp import base_solver
+from countries.asp import literal
 
 
 __author__ = "Patrick Hohenecker"
@@ -55,11 +61,14 @@ __status__ = "Development"
 class DatasetGenerator(object):
     """This class implements the actual process of generating a dataset."""
     
-    NUM_EVAL_COUNTRIES = 20
-    """int: The number of countries to retain for each evaluation set, i.e., dev and test."""
-    
     MAX_ATTEMPTS = 100
     """int: The maximum number of attempts for generating a dataset."""
+    
+    NEIGHBOR_OF_PREDICATE = "neighborOf"
+    """str: The predicate symbol that is used to represent the neighbor-of relation."""
+    
+    NUM_EVAL_COUNTRIES = 20
+    """int: The number of countries to retain for each evaluation set, i.e., dev and test."""
     
     PROBLEM_S1 = ps.ProblemSetting.S1.value
     """str: An identifier for the first of the considered problem settings."""
@@ -72,32 +81,56 @@ class DatasetGenerator(object):
     
     #  CONSTRUCTOR  ####################################################################################################
     
-    def __init__(self, data: typing.Dict[str, country.Country], problem_setting: str):
+    def __init__(
+            self,
+            data: typing.Dict[str, country.Country],
+            problem_setting: str,
+            solver: base_solver.BaseSolver,
+            ontology_path: str
+    ):
         """Creates a new instance of ``DataGenerator`` for creating datasets from the provided data.
         
         Args:
             data (collections.OrderedDict): The data to generate datasets form. This is supposed to map country names to
                 lists of neighbors, given in terms of the same names.
             problem_setting (str): The considered problem setting.
+            solver (:class:`base_solver.BaseSolver`): The ASP solver to use.
+            ontology_path (str): The path to the ASP program that describes the used ontology.
         """
         # sanitize args
         insanity.sanitize_type("data", data, collections.OrderedDict)
         problem_setting = str(problem_setting)
         insanity.sanitize_value("problem_setting", problem_setting, [self.PROBLEM_S1, self.PROBLEM_S2, self.PROBLEM_S3])
+        insanity.sanitize_type("solver", solver, base_solver.BaseSolver)
+        ontology_path = str(ontology_path)
+        if not os.path.isfile(ontology_path):
+            raise ValueError(
+                    "The provided <ontology_path> does not refer to an existing file: '{}'!".format(ontology_path)
+            )
         
         # define attributes
         self._classes = {}                       # maps class names to individuals
         self._data = data                        # the provided data as dict from country names to Country objects
+        self._ontology_path = ontology_path      # the ASP program that describes the ontology
         self._problem_setting = problem_setting  # the considered version of the reasoning problem
         self._regions = None                     # maps region names to lists of (names of) subregions
         self._relations = {}                     # maps relation names to individuals
+        self._solver = solver                    # the used ASP solver
+        
+        # fix the names of countries, regions, and subregions in the data (DLV expects camel case)
+        self._data = {self._fix_name(k): v for k, v in self._data.items()}
+        for c in self._data.values():
+            c.name = self._fix_name(c.name)
+            c.region = self._fix_name(c.region)
+            c.subregion = None if c.subregion is None else self._fix_name(c.subregion)
+            c.neighbors = [self._fix_name(n) for n in c.neighbors]
         
         # extract regions/subregions from the data
         regions = {}
         for c in self._data.values():
             if c.region not in regions:
                 regions[c.region] = set()
-            if c.subregion not in regions[c.region]:
+            if c.subregion is not None and c.subregion not in regions[c.region]:
                 regions[c.region].add(c.subregion)
         
         # sort regions/subregions alphabetically
@@ -121,6 +154,74 @@ class DatasetGenerator(object):
             )
     
     #  METHODS  ########################################################################################################
+    
+    def _add_literal_to_kg(
+            self,
+            sample: kg.KnowledgeGraph,
+            individuals: typing.Dict[str, individual.Individual],
+            lit: literal.Literal,
+            inferred: bool=False,
+            prediction: bool=False
+    ) -> None:
+        """Adds a literal to a knowledge graph.
+        
+        Args:
+            sample (kg.KnowledgeGraph): The knowledge graph to add the literal to.
+            individuals (dict[str, individual.Individual): Maps names to individuals of ``sample``.
+            lit (:class:`literal.Literal`) The literal to add.
+            inferred (bool, optional): Indicates whether the literal has been inferred, which is ``False`` by default.
+            prediction (bool, optional): Indicates whether the literal is a prediction target, which is ``False`` by
+                default.
+        """
+        if len(lit.terms) == 1:
+            individuals[lit.terms[0]].classes.add(
+                    class_membership.ClassMembership(
+                            self._classes[lit.predicate],
+                            lit.positive,
+                            inferred=inferred,
+                            prediction=prediction
+                    )
+            )
+        else:
+            sample.triples.add(
+                    triple.Triple(
+                            individuals[lit.terms[0]],
+                            self._relations[lit.predicate],
+                            individuals[lit.terms[1]],
+                            positive=lit.positive,
+                            inferred=inferred,
+                            prediction=prediction
+                    )
+            )
+    
+    @staticmethod
+    def _fix_name(name: str) -> str:
+        """Turns the provided name into one that is compatible with DLV.
+        
+        DLV expects names to be alphanumeric and in camel case.
+        
+        Args:
+            name (str): The name to fix.
+        
+        Returns:
+            str: A camel case version of ``name``.
+        """
+        # remove accents
+        name = unidecode.unidecode(name)
+        
+        # remove commas, quotes, apostrophes, and parentheses
+        name = re.sub(r"[,\"'()]", "", name)
+        
+        # make name camel case
+        words = re.split("[ -]", name.lower())
+        valid_name = ""
+        for w in words:
+            if valid_name:
+                valid_name += w[0].upper() + w[1:]
+            else:
+                valid_name = w
+        
+        return valid_name
     
     @dc.new_context
     def _generate_sample(
@@ -165,188 +266,100 @@ class DatasetGenerator(object):
         sample.classes.add_all(self._classes.values())
         sample.relations.add_all(self._relations.values())
         
+        # a dict that maps names to individual objects
+        individuals = {}
+
+        # create variables for storing facts
+        class_facts = set()     # all (positive) class memberships (negative ones are inferred from these)
+        neighbor_facts = set()  # all facts about (positive) neighbor-of relations (negative ones are inferred)
+        location_facts = set()  # the part of the (positive) located-in facts to infer the remaining ones from
+        all_locations = set()   # all (positive) located-in relations (negatives ones are inferred from these)
+        
         # create individuals for all regions/subregions
-        regions = {}  # used to store individuals for regions, maps from names to individuals
         for region in itertools.chain(*((r, *s) for r, s in self._regions.items())):
-            regions[region] = ind_fac.IndividualFactory.create_individual(region.replace(" ", "-"))
-        sample.individuals.add_all(regions.values())
-        
-        # specify classes for all regions
-        for region_name, region_ind in regions.items():
-            
-            # determine whether the current one is a region or a subregion
-            is_region = region_name in self._regions
-            
-            region_ind.classes.add(
-                    class_membership.ClassMembership(
-                            self._classes[voc.CLASS_REGION],  # class
-                            is_region,                        # is_member
-                            not is_region                     # inferred
-                    )
-            )
-            region_ind.classes.add(
-                    class_membership.ClassMembership(
-                            self._classes[voc.CLASS_SUBREGION],  # class
-                            not is_region,                       # is_member
-                            is_region                            # inferred
-                    )
-            )
-            region_ind.classes.add(
-                    class_membership.ClassMembership(
-                            self._classes[voc.CLASS_COUNTRY],  # class
-                            False,                             # is_member
-                            True                               # inferred
-                    )
-            )
-        
-        # create triples for subregion relationships
+            individuals[region] = ind_fac.IndividualFactory.create_individual(region)
+            sample.individuals.add(individuals[region])
+
+        # create literals that describe the existing regions and subregions as well as the relations among them
         for r, subregions in self._regions.items():
+            class_facts.add(literal.Literal(voc.CLASS_REGION, [r]))
             for s in subregions:
-                sample.triples.add(
-                        triple.Triple(
-                                regions[s],                                # s
-                                self._relations[voc.RELATION_LOCATED_IN],  # p
-                                regions[r],                                # o
-                                True,                                      # positive
-                                False                                      # inferred
-                        )
-                )
+                class_facts.add(literal.Literal(voc.CLASS_SUBREGION, [s]))
+                loc_lit = literal.Literal(voc.RELATION_LOCATED_IN, [s, r])
+                location_facts.add(loc_lit)
+                all_locations.add(loc_lit)
         
-        # create individuals for all countries, maps names to individuals
-        countries = collections.OrderedDict((c, ind_fac.IndividualFactory.create_individual(c)) for c in countries)
-        sample.individuals.add_all(countries.values())
-
-        # specify classes for all regions
-        for cou in countries.values():
-            cou.classes.add(
-                    class_membership.ClassMembership(
-                            self._classes[voc.CLASS_COUNTRY],  # class
-                            True,                              # is_member
-                            False                              # inferred
-                    )
-            )
-            cou.classes.add(
-                    class_membership.ClassMembership(
-                            self._classes[voc.CLASS_REGION],  # class
-                            False,                            # is_member
-                            True                              # inferred
-                    )
-            )
-            cou.classes.add(
-                    class_membership.ClassMembership(
-                            self._classes[voc.CLASS_SUBREGION],  # class
-                            False,                               # is_member
-                            True                                 # inferred
-                    )
-            )
+        # create individuals for all countries
+        for c in countries:
+            individuals[c] = ind_fac.IndividualFactory.create_individual(c)
+            sample.individuals.add(individuals[c])
         
-        all_located_in = set()   # used to store all positive located-in triples (as s-o-pairs of country names)
-        all_neighbor_of = set()  # used to store all positive neighbor-of triples (as s-o-pairs of country names)
+        # create literals for (countries') located-in and neighbor-of relationships
+        for cou_name in countries:
         
-        # create triples for (countries') located-in and neighbor-of relationships
-        for cou_name, cou_ind in countries.items():
-        
-            # fetch the countries region and subregion (as individuals)
-            r = regions[self._data[cou_name].region]
-            s = None if self._data[cou_name].subregion is None else regions[self._data[cou_name].subregion]
-
-            # store the triples (for generating negatives later on)
-            all_located_in.add((cou_name, self._data[cou_name].region))
-            if s is not None:
-                all_located_in.add((cou_name, self._data[cou_name].subregion))
+            # fetch the current country's region and subregion
+            r = self._data[cou_name].region
+            s = self._data[cou_name].subregion
             
-            # add triples for located_in
-            inferred = (
-                    cou_name in inf_countries or
-                    (self._problem_setting == self.PROBLEM_S3 and cou_name in inf_neighbors)
-            )
-            sample.triples.add(
-                    triple.Triple(
-                            cou_ind,                                   # s
-                            self._relations[voc.RELATION_LOCATED_IN],  # p
-                            r,                                         # o
-                            True,                                      # positive
-                            inferred                                   # inferred
-                    )
-            )
-            if s is not None:
-                inferred = cou_name in inf_countries and not self._problem_setting == self.PROBLEM_S1
-                sample.triples.add(
-                        triple.Triple(
-                                cou_ind,                                   # s
-                                self._relations[voc.RELATION_LOCATED_IN],  # p
-                                s,                                         # o
-                                True,                                      # positive
-                                inferred                                   # inferred
-                        )
-                )
+            # create literals that describe the country as well as the relation to its region/subregion
+            cou_lit = literal.Literal(voc.CLASS_COUNTRY, [cou_name])
+            reg_lit = literal.Literal(voc.RELATION_LOCATED_IN, [cou_name, r])
+            sub_lit = None if s is None else literal.Literal(voc.RELATION_LOCATED_IN, [cou_name, s])
+            class_facts.add(cou_lit)
+            all_locations.add(reg_lit)
+            if sub_lit is not None:
+                all_locations.add(sub_lit)
             
-            # iterate over all neighbors of the current individual, and add an according neighbor_of triple
+            # determine whether the located-in predicates should be added to the list of provided facts
+            if self._problem_setting == self.PROBLEM_S1:
+                if sub_lit is not None:            # subregion is provided for all countries
+                    location_facts.add(sub_lit)
+                if cou_name not in inf_countries:  # region is not provided for target countries
+                    location_facts.add(reg_lit)
+            elif self._problem_setting == self.PROBLEM_S2:
+                if cou_name not in inf_countries:  # neither region nor subregion are provided for target countries
+                    location_facts.add(reg_lit)
+                    if sub_lit is not None:
+                        location_facts.add(sub_lit)
+            else:
+                if cou_name not in inf_countries and cou_name not in inf_neighbors:  # region is neither provided for
+                    location_facts.add(reg_lit)                                      # for targets nor their neighbors
+                if cou_name not in inf_countries and sub_lit is not None:            # subregion is not provided for
+                    location_facts.add(sub_lit)                                      # target countries
+            
+            # iterate over all neighbors of the current country, and add according neighbor-of literals
             for n in self._data[cou_name].neighbors:
-                
-                # ensure that the current neighbor is part of the generated dataset
-                if n not in countries:
-                    continue
-                
-                # store the triples (for generating negatives later on)
-                all_neighbor_of.add((cou_name, n))
-                
-                # fetch the individual for the current neighbor
-                n = countries[n]
-                
-                # add the triple
-                sample.triples.add(
-                        triple.Triple(
-                                cou_ind,                                    # s
-                                self._relations[voc.RELATION_NEIGHBOR_OF],  # p
-                                n,                                          # o
-                                True,                                       # positive
-                                False                                       # inferred
-                        )
+                if n in countries:  # -> important, because not all of the countries in self._data might be used
+                    neighbor_facts.add(literal.Literal(self.NEIGHBOR_OF_PREDICATE, [cou_name, n]))
+        
+        # compute all inferences that are possible based on the restricted data
+        answer_set = self._solver.run(
+                self._ontology_path,
+                itertools.chain(neighbor_facts, location_facts)
+        )
+        
+        # add all facts to the sample
+        for f in list(sorted(answer_set.facts, key=lambda x: str(x))):
+            self._add_literal_to_kg(sample, individuals, f)
+        
+        # add all inferences ot the sample
+        for i in list(sorted(answer_set.inferences, key=lambda x: str(x))):
+            self._add_literal_to_kg(sample, individuals, i, inferred=True)
+        
+        # compute perfect knowledge
+        perfect_knowledge = set(
+                self._solver.run(
+                        self._ontology_path,
+                        itertools.chain(class_facts, neighbor_facts, all_locations)
                 )
+        )
         
-        # iterate over all country-region pairs, and add a negative located-in triple no positive was added before
-        for cou_name, cou_ind in countries.items():
-            for reg_name, reg_ind in regions.items():
-                
-                # check if the current country is located in the current region, and add a negative triple if not
-                if (cou_name, reg_name) not in all_located_in:
-    
-                    # determine whether the triple is specified or inferred
-                    if reg_name in self._regions:  # the current region is NOT a subregion
-                        inferred = (
-                                cou_name in inf_countries or
-                                (self._problem_setting == self.PROBLEM_S3 and cou_name in inf_neighbors)
-                        )
-                    else:  # the current region IS a subregion
-                        inferred = cou_name in inf_countries and self._problem_setting != self.PROBLEM_S1
-                    
-                    # add the triple
-                    sample.triples.add(
-                            triple.Triple(
-                                    cou_ind,                                   # s
-                                    self._relations[voc.RELATION_LOCATED_IN],  # p
-                                    reg_ind,                                   # o
-                                    False,                                     # positive
-                                    inferred                                   # inferred
-                            )
-                    )
-        
-        # iterate over all pairs of countries, and add a negative neighbor-of triple if no positive was added before
-        # for cou_name_1, cou_ind_1 in countries.items():
-        #     for cou_name_2, cou_ind_2 in countries.items():
-        #
-        #         # check if the current individuals are no neighbors, and add a negative triple if not
-        #         if (cou_name_1, cou_name_2) not in all_neighbor_of:
-        #             sample.triples.add(
-        #                     triple.Triple(
-        #                             cou_ind_1,                                  # s
-        #                             self._relations[voc.RELATION_NEIGHBOR_OF],  # p
-        #                             cou_ind_2,                                  # o
-        #                             False,                                      # positive
-        #                             True                                        # inferred
-        #                     )
-        #             )
+        # determine all information that was neither provided nor inferred
+        missing_knowledge = list(sorted(perfect_knowledge - set(answer_set), key=lambda x: str(x)))
+
+        # add missing knowledge as prediction targets to the sample
+        for p in missing_knowledge:
+            self._add_literal_to_kg(sample, individuals, p, prediction=True)
         
         # provide the created sample
         return sample
