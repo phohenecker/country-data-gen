@@ -24,6 +24,10 @@
 % author:   Patrick Hohenecker (mail@paho.at)
 % version:  2017.1
 
+locatedIn(c1, s1).
+locatedIn(s1, r1).
+country(c2).
+
 
 %%%%%%%% SAFETY RULES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -77,4 +81,8 @@ country(C) :- neighborOf(C, _) .
 country(C) :- neighborOf(_, C) .
 
 % neighborOf is symmetric
-neighborOf(C2, C1) :- neighborOf(C1, C2) .
+neighborOf(C2, C1)  :- neighborOf(C1, C2)  .
+~neighborOf(C2, C1) :- ~neighborOf(C1, C2) .
+
+% all neighborOf relations are specified explicitly (at least one direction)
+~neighborOf(C1, C2) :- country(C1), country(C2), C1!=C2, not neighborOf(C1, C2) .
