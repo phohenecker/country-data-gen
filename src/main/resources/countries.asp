@@ -24,10 +24,6 @@
 % author:   Patrick Hohenecker (mail@paho.at)
 % version:  2017.1
 
-locatedIn(c1, s1).
-locatedIn(s1, r1).
-country(c2).
-
 
 %%%%%%%% SAFETY RULES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
