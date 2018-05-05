@@ -44,6 +44,9 @@ __status__ = "Development"
 class Config(object):
     """This class contains all of the user-defined configuration for running the data generator."""
     
+    DEFAULT_DLV = "src/main/resources/dlv.i386-apple-darwin.bin"
+    """str: Default value of attribute :attr:`dlv`."""
+    
     DEFAULT_NUM_DATASETS = 1
     """int: Default value of attribute :attr:`num_datasets`."""
     
@@ -65,6 +68,7 @@ class Config(object):
         """Creates a new instance of ``Config`` that describes the default configuration."""
         # for a description of the following attributes, confer the respective properties
         self._data = None
+        self._dlv = self.DEFAULT_DLV
         self._num_datasets = self.DEFAULT_NUM_DATASETS
         self._num_training_samples = self.DEFAULT_NUM_TRAINING_SAMPLES
         self._output_dir = self.DEFAULT_OUTPUT_DIR
@@ -87,6 +91,18 @@ class Config(object):
         if not os.path.isfile(data):
             raise ValueError("The provided <data> does not refer to an existing file: '{}'!".format(data))
         self._data = data
+    
+    @property
+    def dlv(self) -> typing.Optional[str]:
+        """str: The path to the DLV executable to use."""
+        return self._dlv
+    
+    @dlv.setter
+    def dlv(self, dlv: str) -> None:
+        dlv = str(dlv)
+        if not os.path.isfile(dlv):
+            raise ValueError("<dlv> does not refer to an existing file: '{}'!".format(dlv))
+        self._dlv = dlv
     
     @property
     def num_datasets(self) -> int:
