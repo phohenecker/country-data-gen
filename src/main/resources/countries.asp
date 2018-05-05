@@ -75,3 +75,6 @@ locatedIn(C, R) :- locatedIn(C, S), locatedIn(S, R) .
 % inferable types
 country(C) :- neighborOf(C, _) .
 country(C) :- neighborOf(_, C) .
+
+% neighborOf is symmetric
+neighborOf(C2, C1) :- neighborOf(C1, C2) .
