@@ -55,7 +55,8 @@ setup(
                 "argmagic>=2017.1",
                 "insanity>=2017.1",
                 "reldata>=2017.1",
-                "streamtologger>=2017.1"
+                "streamtologger>=2017.1",
+                "Unidecode>=1.0.22"
         ],
         license="MIT License",
         long_description=long_description,
