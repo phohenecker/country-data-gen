@@ -243,7 +243,7 @@ def main(conf: config.Config):
             )
     )
     generator = data_gen.DatasetGenerator(data, conf.setting, dlv_solver.DlvSolver(conf.dlv), ONTOLOGY)
-    datasets = generator.generate_datasets(conf.num_datasets, conf.num_training_samples)
+    datasets = generator.generate_datasets(conf.num_datasets, conf.num_training_samples, conf.minimal)
     print("OK\n")
     
     # write datasets to disk

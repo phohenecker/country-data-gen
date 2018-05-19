@@ -227,7 +227,8 @@ class DatasetGenerator(object):
     def _generate_sample(
             self,
             spec_countries: typing.List[str],
-            inf_countries: typing.List[str]=None
+            inf_countries: typing.List[str]=None,
+            minimal: bool=False
     ) -> kg.KnowledgeGraph:
         """Generates a single training samples based on the provided data.
         
@@ -239,6 +240,7 @@ class DatasetGenerator(object):
         Args:
             spec_countries (list[str]): All countries whose regions are specified.
             inf_countries (list[str], optional): Those countries, whose regions are to be inferred.
+            minimal (bool, optional): Indicates whether to generate a minimal sample.
         
         Returns:
             kg.KnowledgeGraph: The created training sample.
@@ -340,11 +342,13 @@ class DatasetGenerator(object):
         
         # add all facts to the sample
         for f in list(sorted(answer_set.facts, key=lambda x: str(x))):
-            self._add_literal_to_kg(sample, individuals, f)
+            if not minimal or (f.predicate == voc.RELATION_LOCATED_IN and f.terms[0] in inf_countries):
+                self._add_literal_to_kg(sample, individuals, f)
         
         # add all inferences ot the sample
         for i in list(sorted(answer_set.inferences, key=lambda x: str(x))):
-            self._add_literal_to_kg(sample, individuals, i, inferred=True)
+            if not minimal or (i.predicate == voc.RELATION_LOCATED_IN and i.terms[0] in inf_countries):
+                self._add_literal_to_kg(sample, individuals, i, inferred=True)
         
         # compute perfect knowledge
         perfect_knowledge = set(
@@ -359,7 +363,8 @@ class DatasetGenerator(object):
 
         # add missing knowledge as prediction targets to the sample
         for p in missing_knowledge:
-            self._add_literal_to_kg(sample, individuals, p, prediction=True)
+            if not minimal or (p.predicate == voc.RELATION_LOCATED_IN and p.terms[0] in inf_countries):
+                self._add_literal_to_kg(sample, individuals, p, prediction=True)
         
         # provide the created sample
         return sample
@@ -412,12 +417,19 @@ class DatasetGenerator(object):
         # raise an error to signal that the maximum number of attempts was exceeded
         raise ValueError("{} attempts to split the countries into train/dev/test failed!".format(self.MAX_ATTEMPTS))
         
-    def generate_datasets(self, num_datasets, num_training_samples) -> typing.List[dataset.Dataset]:
+    def generate_datasets(
+            self,
+            num_datasets: int,
+            num_training_samples: int,
+            minimal: bool
+    ) -> typing.List[dataset.Dataset]:
         """Generates datasets from the data that was provided to this instance of ``DatasetGenerator`.
         
         Args:
             num_datasets (int): The total number of datasets to create.
             num_training_samples (int): The number of training samples to create for each dataset.
+            minimal (bool): Specifies whether to generate a minimal dataset, i.e., one that contains inferences and
+                predictions for target countries only.
         """
         # sanitize args
         insanity.sanitize_type("num_datasets", num_datasets, int)
@@ -433,11 +445,11 @@ class DatasetGenerator(object):
             train, dev, test = self._split_countries()
             
             # create training samples
-            train_samples = [self._generate_sample(train) for _ in range(num_training_samples)]
+            train_samples = [self._generate_sample(train, minimal=minimal) for _ in range(num_training_samples)]
             
             # create evaluation samples
-            dev_sample = self._generate_sample(train, inf_countries=dev)
-            test_sample = self._generate_sample(train, inf_countries=test)
+            dev_sample = self._generate_sample(train, inf_countries=dev, minimal=minimal)
+            test_sample = self._generate_sample(train, inf_countries=test, minimal=minimal)
             
             # create dataset
             datasets.append(dataset.Dataset(train_samples, dev_sample, test_sample))
