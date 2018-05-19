@@ -2,6 +2,7 @@
 
 
 import os
+import random
 import typing
 
 import insanity
@@ -47,6 +48,9 @@ class Config(object):
     DEFAULT_DLV = "src/main/resources/dlv.i386-apple-darwin.bin"
     """str: Default value of attribute :attr:`dlv`."""
     
+    DEFAULT_MINIMAL = False
+    """bool: Default value of attribute :attr:`minimal`."""
+    
     DEFAULT_NUM_DATASETS = 1
     """int: Default value of attribute :attr:`num_datasets`."""
     
@@ -69,11 +73,12 @@ class Config(object):
         # for a description of the following attributes, confer the respective properties
         self._data = None
         self._dlv = self.DEFAULT_DLV
+        self._minimal = self.DEFAULT_MINIMAL
         self._num_datasets = self.DEFAULT_NUM_DATASETS
         self._num_training_samples = self.DEFAULT_NUM_TRAINING_SAMPLES
         self._output_dir = self.DEFAULT_OUTPUT_DIR
         self._quiet = self.DEFAULT_QUIET
-        self._seed = None
+        self._seed = random.randrange(100000)
         self._setting = self.DEFAULT_SETTING
 
     #  PROPERTIES  #####################################################################################################
@@ -103,6 +108,15 @@ class Config(object):
         if not os.path.isfile(dlv):
             raise ValueError("<dlv> does not refer to an existing file: '{}'!".format(dlv))
         self._dlv = dlv
+    
+    @property
+    def minimal(self) -> bool:
+        """bool: Specifies whether to confine inferences to locatedIn predicates from the target set."""
+        return self._minimal
+    
+    @minimal.setter
+    def minimal(self, minimal: bool) -> None:
+        self._minimal = bool(minimal)
     
     @property
     def num_datasets(self) -> int:
