@@ -66,6 +66,10 @@ region(R)    :- locatedIn(C, S), locatedIn(S, R)           .
 % every country/subregion is located in at most one region
 ~locatedIn(X, R2) :- locatedIn(X, R1), region(R1), region(R2), R1!=R2 .
 
+% no country in one region is located in another region's subregions
+% (this rule is needed in additional to the previous one, since there exist regions without subregions)
+~locatedIn(C, S) :- locatedIn(C, R1), locatedIn(S, R2), country(C), region(R1), subregion(S), R1!=R2 .
+
 % transitivity
 locatedIn(C, R) :- locatedIn(C, S), locatedIn(S, R) .
 
