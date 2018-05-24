@@ -342,8 +342,7 @@ class DatasetGenerator(object):
         
         # add all facts to the sample
         for f in list(sorted(answer_set.facts, key=lambda x: str(x))):
-            if not minimal or (f.predicate == voc.RELATION_LOCATED_IN and f.terms[0] in inf_countries):
-                self._add_literal_to_kg(sample, individuals, f)
+            self._add_literal_to_kg(sample, individuals, f)
         
         # add all inferences ot the sample
         for i in list(sorted(answer_set.inferences, key=lambda x: str(x))):
