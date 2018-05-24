@@ -242,7 +242,13 @@ def main(conf: config.Config):
                     "s" if conf.num_training_samples > 1 else ""
             )
     )
-    generator = data_gen.DatasetGenerator(data, conf.setting, dlv_solver.DlvSolver(conf.dlv), ONTOLOGY)
+    generator = data_gen.DatasetGenerator(
+            data,
+            conf.setting,
+            dlv_solver.DlvSolver(conf.dlv),
+            ONTOLOGY,
+            conf.class_facts
+    )
     datasets = generator.generate_datasets(conf.num_datasets, conf.num_training_samples, conf.minimal)
     print("OK\n")
     

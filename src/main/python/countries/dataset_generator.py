@@ -86,7 +86,8 @@ class DatasetGenerator(object):
             data: typing.Dict[str, country.Country],
             problem_setting: str,
             solver: base_solver.BaseSolver,
-            ontology_path: str
+            ontology_path: str,
+            class_facts: bool
     ):
         """Creates a new instance of ``DataGenerator`` for creating datasets from the provided data.
         
@@ -96,6 +97,7 @@ class DatasetGenerator(object):
             problem_setting (str): The considered problem setting.
             solver (:class:`base_solver.BaseSolver`): The ASP solver to use.
             ontology_path (str): The path to the ASP program that describes the used ontology.
+            class_facts (bool): Indicates whether to include class facts in generated samples.
         """
         # sanitize args
         insanity.sanitize_type("data", data, collections.OrderedDict)
@@ -109,6 +111,7 @@ class DatasetGenerator(object):
             )
         
         # define attributes
+        self._class_facts = bool(class_facts)    # indicates whether to include class facts in samples
         self._classes = {}                       # maps class names to individuals
         self._data = data                        # the provided data as dict from country names to Country objects
         self._ontology_path = ontology_path      # the ASP program that describes the ontology
@@ -335,10 +338,10 @@ class DatasetGenerator(object):
                     neighbor_facts.add(literal.Literal(self.NEIGHBOR_OF_PREDICATE, [cou_name, n]))
         
         # compute all inferences that are possible based on the restricted data
-        answer_set = self._solver.run(
-                self._ontology_path,
-                itertools.chain(neighbor_facts, location_facts)
-        )
+        input_facts = list(itertools.chain(neighbor_facts, location_facts))
+        if self._class_facts:
+            input_facts += class_facts
+        answer_set = self._solver.run(self._ontology_path, input_facts)
         
         # add all facts to the sample
         for f in list(sorted(answer_set.facts, key=lambda x: str(x))):

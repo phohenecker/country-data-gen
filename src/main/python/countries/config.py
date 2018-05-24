@@ -45,6 +45,9 @@ __status__ = "Development"
 class Config(object):
     """This class contains all of the user-defined configuration for running the data generator."""
     
+    DEFAULT_CLASS_FACTS = False
+    """bool: Default value of attribute :attr:`class_facts`."""
+    
     DEFAULT_DLV = "src/main/resources/dlv.i386-apple-darwin.bin"
     """str: Default value of attribute :attr:`dlv`."""
     
@@ -71,6 +74,7 @@ class Config(object):
     def __init__(self):
         """Creates a new instance of ``Config`` that describes the default configuration."""
         # for a description of the following attributes, confer the respective properties
+        self._class_facts = self.DEFAULT_CLASS_FACTS
         self._data = None
         self._dlv = self.DEFAULT_DLV
         self._minimal = self.DEFAULT_MINIMAL
@@ -83,6 +87,15 @@ class Config(object):
 
     #  PROPERTIES  #####################################################################################################
     
+    @property
+    def class_facts(self) -> bool:
+        """bool: Specifies whether to include classes as facts."""
+        return self._class_facts
+    
+    @class_facts.setter
+    def class_facts(self, class_facts: bool) -> None:
+        self._class_facts = bool(class_facts)
+        
     @decorators.optional
     @property
     def data(self) -> typing.Optional[str]:
