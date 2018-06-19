@@ -17,11 +17,11 @@ from reldata.data import individual
 from reldata.data import individual_factory as ind_fac
 from reldata.data import knowledge_graph as kg
 from reldata.data import triple
+from reldata.io import kg_writer
 from reldata.vocab import class_type_factory as ctf
 from reldata.vocab import relation_type_factory as rtf
 
 from countries import country
-from countries import dataset
 from countries import problem_setting as ps
 from countries import vocabulary as voc
 from countries.asp import base_solver
@@ -423,25 +423,33 @@ class DatasetGenerator(object):
             self,
             num_datasets: int,
             num_training_samples: int,
-            minimal: bool
-    ) -> typing.List[dataset.Dataset]:
-        """Generates datasets from the data that was provided to this instance of ``DatasetGenerator`.
+            minimal: bool,
+            output_dir: str
+    ) -> None:
+        """Generates datasets from the data that was provided to this instance of ``DatasetGenerator`, and writes them
+        to disk.
         
         Args:
             num_datasets (int): The total number of datasets to create.
             num_training_samples (int): The number of training samples to create for each dataset.
             minimal (bool): Specifies whether to generate a minimal dataset, i.e., one that contains inferences and
                 predictions for target countries only.
+            output_dir (str): The path of the output directory.
         """
         # sanitize args
         insanity.sanitize_type("num_datasets", num_datasets, int)
         insanity.sanitize_range("num_datasets", num_datasets, minimum=1)
         insanity.sanitize_type("num_training_samples", num_training_samples, int)
         insanity.sanitize_range("num_training_samples", num_training_samples, minimum=1)
+
+        # create patterns for the names of the directories that are created for the single datasets and for
+        # the base names of training samples
+        output_dir_pattern = "{:0" + str(len(str(num_datasets - 1))) + "d}"
+        sample_filename_pattern = "{:0" + str(len(str(num_training_samples - 1))) + "d}"
         
-        datasets = []  # store the created datasets
-        
-        for _ in range(num_datasets):
+        for dataset_idx in range(num_datasets):
+            
+            print("generating dataset #{}...".format(dataset_idx))
         
             # split countries into train/dev/test
             train, dev, test = self._split_countries()
@@ -453,11 +461,36 @@ class DatasetGenerator(object):
             dev_sample = self._generate_sample(train, inf_countries=dev, minimal=minimal)
             test_sample = self._generate_sample(train, inf_countries=test, minimal=minimal)
             
-            # create dataset
-            datasets.append(dataset.Dataset(train_samples, dev_sample, test_sample))
-            
             num_spec = len([t for t in test_sample.triples if not t.inferred])
             num_inf = len([t for t in test_sample.triples if t.inferred])
             print("# triples in test sample: {} ({} spec / {} inf)".format(num_spec + num_inf, num_spec, num_inf))
-        
-        return datasets
+
+            # assemble needed paths
+            ds_output_dir = os.path.join(output_dir, output_dir_pattern.format(dataset_idx))
+            train_dir = os.path.join(ds_output_dir, "train")
+            dev_dir = os.path.join(ds_output_dir, "dev")
+            test_dir = os.path.join(ds_output_dir, "test")
+
+            print("writing dataset to '{}'...".format(ds_output_dir))
+
+            # create folder structure for storing the current dataset
+            if not os.path.isdir(ds_output_dir):
+                os.mkdir(ds_output_dir)
+            if not os.path.isdir(train_dir):
+                os.mkdir(train_dir)
+            if not os.path.isdir(dev_dir):
+                os.mkdir(dev_dir)
+            if not os.path.isdir(test_dir):
+                os.mkdir(test_dir)
+
+            # write dev sample to disk
+            kg_writer.KgWriter.write(dev_sample, dev_dir, "dev")
+
+            # write test sample to disk
+            kg_writer.KgWriter.write(test_sample, test_dir, "test")
+
+            # write training samples to disk
+            for sample_idx, sample in enumerate(train_samples):
+                kg_writer.KgWriter.write(sample, train_dir, sample_filename_pattern.format(sample_idx))
+
+            print("OK\n")

@@ -15,11 +15,8 @@ import urllib.request
 import argmagic
 import streamtologger
 
-from reldata.io import kg_writer
-
 from countries import config
 from countries import country
-from countries import dataset
 from countries import dataset_generator as data_gen
 from countries.asp import dlv_solver
 
@@ -146,48 +143,6 @@ def _print_config(conf: config.Config) -> None:
     print()
 
 
-def _write_data(datasets: typing.List[dataset.Dataset], output_dir: str) -> None:
-    """Writes the provided datasets to disk.
-    
-    Args:
-        datasets (list[:class:`dataset.Dataset`]): A list of all datasets to write.
-        output_dir (str): The path of the output directory.
-    """
-    output_dir_pattern = "{:0" + str(len(str(len(datasets) - 1))) + "d}"
-    for idx, ds in enumerate(datasets):
-    
-        # assemble needed paths
-        ds_output_dir = os.path.join(output_dir, output_dir_pattern.format(idx))
-        train_dir = os.path.join(ds_output_dir, "train")
-        dev_dir = os.path.join(ds_output_dir, "dev")
-        test_dir = os.path.join(ds_output_dir, "test")
-    
-        print("writing dataset to '{}'...".format(ds_output_dir))
-    
-        # create folder structure for storing the current dataset
-        if not os.path.isdir(ds_output_dir):
-            os.mkdir(ds_output_dir)
-        if not os.path.isdir(train_dir):
-            os.mkdir(train_dir)
-        if not os.path.isdir(dev_dir):
-            os.mkdir(dev_dir)
-        if not os.path.isdir(test_dir):
-            os.mkdir(test_dir)
-    
-        # write dev sample to disk
-        kg_writer.KgWriter.write(ds.dev, dev_dir, "dev")
-    
-        # write test sample to disk
-        kg_writer.KgWriter.write(ds.test, test_dir, "test")
-        
-        # write training samples to disk
-        sample_filename_pattern = "{:0" + str(len(str(len(ds.train) - 1))) + "d}"
-        for sample_idx, sample in enumerate(ds.train):
-            kg_writer.KgWriter.write(sample, train_dir, sample_filename_pattern.format(sample_idx))
-    
-        print("OK")
-
-
 def main(conf: config.Config):
     
     # create the output directory if it does not exist yet
@@ -235,7 +190,7 @@ def main(conf: config.Config):
     
     # invoke dataset generator to create the required datasets
     print(
-            "generating {} dataset{} with {} training sample{}".format(
+            "generating {} dataset{} with {} training sample{}\n".format(
                     conf.num_datasets,
                     "s" if conf.num_datasets > 1 else "",
                     conf.num_training_samples,
@@ -249,11 +204,7 @@ def main(conf: config.Config):
             ONTOLOGY,
             conf.class_facts
     )
-    datasets = generator.generate_datasets(conf.num_datasets, conf.num_training_samples, conf.minimal)
-    print("OK\n")
-    
-    # write datasets to disk
-    _write_data(datasets, conf.output_dir)
+    generator.generate_datasets(conf.num_datasets, conf.num_training_samples, conf.minimal, conf.output_dir)
     
 
 main(argmagic.parse_args(config.Config, app_name=APP_NAME, app_description=APP_DESCRIPTION))
