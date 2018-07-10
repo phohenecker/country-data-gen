@@ -336,6 +336,7 @@ class DatasetGenerator(object):
             for n in self._data[cou_name].neighbors:
                 if n in countries:  # -> important, because not all of the countries in self._data might be used
                     neighbor_facts.add(literal.Literal(self.NEIGHBOR_OF_PREDICATE, [cou_name, n]))
+                    neighbor_facts.add(literal.Literal(self.NEIGHBOR_OF_PREDICATE, [n, cou_name]))
         
         # compute all inferences that are possible based on the restricted data
         input_facts = list(itertools.chain(neighbor_facts, location_facts))
