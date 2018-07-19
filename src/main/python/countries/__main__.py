@@ -204,7 +204,7 @@ def main(conf: config.Config):
             ONTOLOGY,
             conf.class_facts
     )
-    generator.generate_datasets(conf.num_datasets, conf.num_training_samples, conf.minimal, conf.output_dir)
+    generator.generate_datasets(conf.num_datasets, conf.num_training_samples, conf.output_dir)
     
 
 main(argmagic.parse_args(config.Config, app_name=APP_NAME, app_description=APP_DESCRIPTION))

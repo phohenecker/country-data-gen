@@ -123,15 +123,6 @@ class Config(object):
         self._dlv = dlv
     
     @property
-    def minimal(self) -> bool:
-        """bool: Specifies whether to confine inferences to locatedIn predicates from the target set."""
-        return self._minimal
-    
-    @minimal.setter
-    def minimal(self, minimal: bool) -> None:
-        self._minimal = bool(minimal)
-    
-    @property
     def num_datasets(self) -> int:
         """int: The total number of datasets to generate."""
         return self._num_datasets

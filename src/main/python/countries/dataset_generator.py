@@ -243,7 +243,8 @@ class DatasetGenerator(object):
         Args:
             spec_countries (list[str]): All countries whose regions are specified.
             inf_countries (list[str], optional): Those countries, whose regions are to be inferred.
-            minimal (bool, optional): Indicates whether to generate a minimal sample.
+            minimal (bool, optional): Specifies whether to generate a minimal sample, i.e., one that contains inferences
+                and predictions for target countries only. This is ``False``, by default.
         
         Returns:
             kg.KnowledgeGraph: The created training sample.
@@ -424,7 +425,6 @@ class DatasetGenerator(object):
             self,
             num_datasets: int,
             num_training_samples: int,
-            minimal: bool,
             output_dir: str
     ) -> None:
         """Generates datasets from the data that was provided to this instance of ``DatasetGenerator`, and writes them
@@ -433,8 +433,6 @@ class DatasetGenerator(object):
         Args:
             num_datasets (int): The total number of datasets to create.
             num_training_samples (int): The number of training samples to create for each dataset.
-            minimal (bool): Specifies whether to generate a minimal dataset, i.e., one that contains inferences and
-                predictions for target countries only.
             output_dir (str): The path of the output directory.
         """
         # sanitize args
@@ -456,11 +454,11 @@ class DatasetGenerator(object):
             train, dev, test = self._split_countries()
             
             # create training samples
-            train_samples = [self._generate_sample(train, minimal=minimal) for _ in range(num_training_samples)]
+            train_samples = [self._generate_sample(train) for _ in range(num_training_samples)]
             
             # create evaluation samples
-            dev_sample = self._generate_sample(train, inf_countries=dev, minimal=minimal)
-            test_sample = self._generate_sample(train, inf_countries=test, minimal=minimal)
+            dev_sample = self._generate_sample(train, inf_countries=dev, minimal=True)
+            test_sample = self._generate_sample(train, inf_countries=test, minimal=True)
             
             num_spec = len([t for t in test_sample.triples if not t.inferred])
             num_inf = len([t for t in test_sample.triples if t.inferred])
