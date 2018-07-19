@@ -351,7 +351,11 @@ class DatasetGenerator(object):
         
         # add all inferences ot the sample
         for i in list(sorted(answer_set.inferences, key=lambda x: str(x))):
-            if not minimal or (len(i.terms) > 1 and i.terms[0] in inf_countries):
+            if (
+                    not minimal or
+                    (len(i.terms) == 1 and i.terms[0] in inf_countries) or
+                    (len(i.terms) == 2 and (i.terms[0] in inf_countries or i.terms[1] in inf_countries))
+            ):
                 self._add_literal_to_kg(sample, individuals, i, inferred=True)
         
         # compute perfect knowledge
@@ -367,7 +371,11 @@ class DatasetGenerator(object):
 
         # add missing knowledge as prediction targets to the sample
         for p in missing_knowledge:
-            if not minimal or (len(i.terms) > 1 and i.terms[0] in inf_countries):
+            if (
+                    not minimal or
+                    (len(i.terms) == 1 and i.terms[0] in inf_countries) or
+                    (len(i.terms) == 2 and (i.terms[0] in inf_countries or i.terms[1] in inf_countries))
+            ):
                 self._add_literal_to_kg(sample, individuals, p, prediction=True)
         
         # provide the created sample
