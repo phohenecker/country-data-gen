@@ -449,33 +449,12 @@ class DatasetGenerator(object):
         for dataset_idx in range(num_datasets):
             
             print("generating dataset #{}...".format(dataset_idx))
-        
-            # split countries into train/dev/test
-            train, dev, test = self._split_countries()
-            
-            # create training samples
-            train_samples = []
-            for sample_idx in range(num_training_samples):
-                print("generating training sample #{}...".format(sample_idx))
-                train_samples.append(self._generate_sample(train))
-            
-            # create evaluation samples
-            print("generating dev sample...")
-            dev_sample = self._generate_sample(train, inf_countries=dev, minimal=True)
-            print("generating test sample...")
-            test_sample = self._generate_sample(train, inf_countries=test, minimal=True)
-            
-            num_spec = len([t for t in test_sample.triples if not t.inferred])
-            num_inf = len([t for t in test_sample.triples if t.inferred])
-            print("number triples in test sample: {} ({} spec / {} inf)".format(num_spec + num_inf, num_spec, num_inf))
 
             # assemble needed paths
             ds_output_dir = os.path.join(output_dir, output_dir_pattern.format(dataset_idx))
             train_dir = os.path.join(ds_output_dir, "train")
             dev_dir = os.path.join(ds_output_dir, "dev")
             test_dir = os.path.join(ds_output_dir, "test")
-
-            print("writing dataset to '{}'...".format(ds_output_dir))
 
             # create folder structure for storing the current dataset
             if not os.path.isdir(ds_output_dir):
@@ -486,15 +465,29 @@ class DatasetGenerator(object):
                 os.mkdir(dev_dir)
             if not os.path.isdir(test_dir):
                 os.mkdir(test_dir)
-
-            # write dev sample to disk
+        
+            # split countries into train/dev/test
+            train, dev, test = self._split_countries()
+            
+            # create training samples + write them to disk
+            for sample_idx in range(num_training_samples):
+                print("generating training sample #{}...".format(sample_idx))
+                sample = self._generate_sample(train)
+                kg_writer.KgWriter.write(sample, train_dir, sample_filename_pattern.format(sample_idx))
+            
+            # create evaluation sample + write it to disk
+            print("generating dev sample... ")
+            dev_sample = self._generate_sample(train, inf_countries=dev, minimal=True)
             kg_writer.KgWriter.write(dev_sample, dev_dir, "dev")
 
-            # write test sample to disk
+            # create test sample + write it to disk
+            print("generating test sample...")
+            test_sample = self._generate_sample(train, inf_countries=test, minimal=True)
             kg_writer.KgWriter.write(test_sample, test_dir, "test")
-
-            # write training samples to disk
-            for sample_idx, sample in enumerate(train_samples):
-                kg_writer.KgWriter.write(sample, train_dir, sample_filename_pattern.format(sample_idx))
+            
+            # print statistics about test sample
+            num_spec = len([t for t in test_sample.triples if not t.inferred])
+            num_inf = len([t for t in test_sample.triples if t.inferred])
+            print("number triples in test sample: {} ({} spec / {} inf)".format(num_spec + num_inf, num_spec, num_inf))
 
             print("OK\n")
