@@ -67,7 +67,7 @@ region(R)    :- locatedIn(C, S), locatedIn(S, R)           .
 ~locatedIn(X, R2) :- locatedIn(X, R1), region(R1), region(R2), R1!=R2 .
 
 % no country in one region is located in another region's subregions
-% (this rule is needed in additional to the previous one, since there exist regions without subregions)
+% (this rule is needed in addition to the previous one, since there exist regions without subregions)
 ~locatedIn(C, S) :- locatedIn(C, R1), locatedIn(S, R2), country(C), region(R1), subregion(S), R1!=R2 .
 
 % transitivity
@@ -85,5 +85,4 @@ neighborOf(C2, C1)  :- neighborOf(C1, C2)  .
 ~neighborOf(C2, C1) :- ~neighborOf(C1, C2) .
 
 % all neighborOf relations are specified explicitly (at least one direction)
-% -> REMOVED TEMPORARILY: we only reason over the relation locatedIn
-% ~neighborOf(C1, C2) :- country(C1), country(C2), C1!=C2, not neighborOf(C1, C2) .
+~neighborOf(C1, C2) :- country(C1), country(C2), C1!=C2, not neighborOf(C1, C2) .
