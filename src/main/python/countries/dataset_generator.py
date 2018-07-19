@@ -454,15 +454,20 @@ class DatasetGenerator(object):
             train, dev, test = self._split_countries()
             
             # create training samples
-            train_samples = [self._generate_sample(train) for _ in range(num_training_samples)]
+            train_samples = []
+            for sample_idx in range(num_training_samples):
+                print("generating training sample #{}...".format(sample_idx))
+                train_samples.append(self._generate_sample(train))
             
             # create evaluation samples
+            print("generating dev sample...")
             dev_sample = self._generate_sample(train, inf_countries=dev, minimal=True)
+            print("generating test sample...")
             test_sample = self._generate_sample(train, inf_countries=test, minimal=True)
             
             num_spec = len([t for t in test_sample.triples if not t.inferred])
             num_inf = len([t for t in test_sample.triples if t.inferred])
-            print("# triples in test sample: {} ({} spec / {} inf)".format(num_spec + num_inf, num_spec, num_inf))
+            print("number triples in test sample: {} ({} spec / {} inf)".format(num_spec + num_inf, num_spec, num_inf))
 
             # assemble needed paths
             ds_output_dir = os.path.join(output_dir, output_dir_pattern.format(dataset_idx))
