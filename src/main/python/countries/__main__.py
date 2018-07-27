@@ -51,7 +51,11 @@ __email__ = "mail@paho.at"
 __status__ = "Development"
 
 
-APP_DESCRIPTION = "TODO"  # TODO
+APP_DESCRIPTION = (
+        "This is a tool for generating datasets of reasoning tasks about countries and regions. "
+        "For additional details, have a look at the project repository at "
+        "https://github.com/phohenecker/country-data-gen."
+)
 """str: The help text that is printed for this app if --help is provided."""
 
 APP_NAME = "run-data-gen.sh"
