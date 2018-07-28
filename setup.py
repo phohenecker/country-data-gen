@@ -53,6 +53,7 @@ setup(
         description="A dataset generator for the countries data.",
         install_requires=[
                 "argmagic>=2017.1",
+                "aspwrapper>=2018.1",
                 "insanity>=2017.1",
                 "reldata>=2017.1",
                 "streamtologger>=2017.1",
