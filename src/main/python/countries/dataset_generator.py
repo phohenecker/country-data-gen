@@ -11,6 +11,8 @@ import typing
 import insanity
 import unidecode
 
+from aspwrapper import base_solver
+from aspwrapper import literal
 from reldata import data_context as dc
 from reldata.data import class_membership
 from reldata.data import individual
@@ -24,8 +26,6 @@ from reldata.vocab import relation_type_factory as rtf
 from countries import country
 from countries import problem_setting as ps
 from countries import vocabulary as voc
-from countries.asp import base_solver
-from countries.asp import literal
 
 
 __author__ = "Patrick Hohenecker"
@@ -343,7 +343,7 @@ class DatasetGenerator(object):
         input_facts = list(itertools.chain(neighbor_facts, location_facts))
         if self._class_facts:
             input_facts += class_facts
-        answer_set = self._solver.run(self._ontology_path, input_facts)
+        answer_set = self._solver.run(self._ontology_path, input_facts)[0]
         
         # add all facts to the sample
         for f in list(sorted(answer_set.facts, key=lambda x: str(x))):
@@ -365,7 +365,7 @@ class DatasetGenerator(object):
                 self._solver.run(
                         self._ontology_path,
                         itertools.chain(class_facts, neighbor_facts, all_locations)
-                )
+                )[0]
         )
         
         # determine all information that was neither provided nor inferred

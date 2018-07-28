@@ -15,10 +15,11 @@ import urllib.request
 import argmagic
 import streamtologger
 
+from aspwrapper import dlv_solver
+
 from countries import config
 from countries import country
 from countries import dataset_generator as data_gen
-from countries.asp import dlv_solver
 
 
 __author__ = "Patrick Hohenecker"
