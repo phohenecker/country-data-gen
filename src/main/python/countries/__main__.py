@@ -71,7 +71,7 @@ DATA_URL = "https://raw.githubusercontent.com/mledoze/countries/master/countries
 LOG_FILE_NAME = "out.log"
 """str: The filename of the created log file."""
 
-ONTOLOGY = "src/main/resources/countries.asp"
+ONTOLOGY = "src/main/asp/ontology.asp"
 """str: The path to the ASP program that describes the used ontology."""
 
 
