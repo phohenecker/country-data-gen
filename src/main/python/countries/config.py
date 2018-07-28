@@ -48,16 +48,13 @@ class Config(object):
     DEFAULT_CLASS_FACTS = False
     """bool: Default value of attribute :attr:`class_facts`."""
     
-    DEFAULT_DLV = "src/main/resources/dlv.i386-apple-darwin.bin"
-    """str: Default value of attribute :attr:`dlv`."""
-    
     DEFAULT_MINIMAL = False
     """bool: Default value of attribute :attr:`minimal`."""
     
     DEFAULT_NUM_DATASETS = 1
     """int: Default value of attribute :attr:`num_datasets`."""
     
-    DEFAULT_NUM_TRAINING_SAMPLES = 100
+    DEFAULT_NUM_TRAINING_SAMPLES = 5000
     """int: Default value of attribute :attr:`num_training_samples`."""
     
     DEFAULT_OUTPUT_DIR = "./out"
@@ -76,7 +73,7 @@ class Config(object):
         # for a description of the following attributes, confer the respective properties
         self._class_facts = self.DEFAULT_CLASS_FACTS
         self._data = None
-        self._dlv = self.DEFAULT_DLV
+        self._dlv = None
         self._minimal = self.DEFAULT_MINIMAL
         self._num_datasets = self.DEFAULT_NUM_DATASETS
         self._num_training_samples = self.DEFAULT_NUM_TRAINING_SAMPLES
