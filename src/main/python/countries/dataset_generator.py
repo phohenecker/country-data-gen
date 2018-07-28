@@ -353,6 +353,8 @@ class DatasetGenerator(object):
         for i in list(sorted(answer_set.inferences, key=lambda x: str(x))):
             if (
                     not minimal or
+                    i.predicate == "region" or
+                    i.predicate == "subregion" or
                     (len(i.terms) == 1 and i.terms[0] in inf_countries) or
                     (len(i.terms) == 2 and (i.terms[0] in inf_countries or i.terms[1] in inf_countries))
             ):
@@ -373,8 +375,10 @@ class DatasetGenerator(object):
         for p in missing_knowledge:
             if (
                     not minimal or
-                    (len(i.terms) == 1 and i.terms[0] in inf_countries) or
-                    (len(i.terms) == 2 and (i.terms[0] in inf_countries or i.terms[1] in inf_countries))
+                    p.predicate == "region" or
+                    p.predicate == "subregion" or
+                    (len(p.terms) == 1 and p.terms[0] in inf_countries) or
+                    (len(p.terms) == 2 and (p.terms[0] in inf_countries or p.terms[1] in inf_countries))
             ):
                 self._add_literal_to_kg(sample, individuals, p, prediction=True)
         
@@ -476,6 +480,14 @@ class DatasetGenerator(object):
         
             # split countries into train/dev/test
             train, dev, test = self._split_countries()
+
+            # write selected dev+test countries to disk
+            with open(os.path.join(ds_output_dir, "countries.dev.txt"), "w") as f:
+                for c in dev:
+                    f.write("{}\n".format(c))
+            with open(os.path.join(ds_output_dir, "countries.test.txt"), "w") as f:
+                for c in test:
+                    f.write("{}\n".format(c))
             
             # create training samples + write them to disk
             for sample_idx in range(num_training_samples):
