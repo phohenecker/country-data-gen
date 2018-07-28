@@ -50,3 +50,6 @@ pip-selfcheck.json
 .classpath
 .project
 .settings/
+
+### DLV
+dlv.*
