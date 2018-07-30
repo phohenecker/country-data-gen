@@ -30,7 +30,7 @@ __copyright__ = (
         "(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n"
         "SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 )
-__license__ = "2-Clause BSD License"
+__license__ = "BSD-2-Clause"
 __version__ = "2018.1"
 __date__ = "Mar 15, 2018"
 __maintainer__ = "Patrick Hohenecker"
@@ -61,7 +61,7 @@ setup(
                 "streamtologger>=2017.1",
                 "Unidecode>=1.0.22"
         ],
-        license="2-Clause BSD License",
+        license="BSD-2-Clause",
         long_description=long_description,
         name="countries",
         package_dir={"": "src/main/python"},

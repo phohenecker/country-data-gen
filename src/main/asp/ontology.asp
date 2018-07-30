@@ -1,4 +1,4 @@
-% Copyright (c) 2017, Patrick Hohenecker
+% Copyright (c) 2018, Patrick Hohenecker
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -22,7 +22,7 @@
 % SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 % author:   Patrick Hohenecker (mail@paho.at)
-% version:  2017.1
+% version:  2018.1
 
 
 %%%%%%%% SAFETY RULES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
