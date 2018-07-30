@@ -30,7 +30,7 @@ __copyright__ = (
         "(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n"
         "SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 )
-__license__ = "MIT License"
+__license__ = "2-Clause BSD License"
 __version__ = "2018.1"
 __date__ = "Mar 15, 2018"
 __maintainer__ = "Patrick Hohenecker"
@@ -45,11 +45,13 @@ setup(
         author="Patrick Hohenecker",
         author_email="mail@paho.at",
         classifiers=[
-                "License :: OSI Approved :: MIT License",
                 "Programming Language :: Python :: 3"
         ],
         copyright="Copyright (c) 2018 Patrick Hohenecker",
-        data_files=[(".", ["LICENSE", "README.md"])],
+        data_files=[
+                (".", ["LICENSE", "README.md"]),
+                ("src/main/asp", ["ontology.asp"])
+        ],
         description="A dataset generator for the countries data.",
         install_requires=[
                 "argmagic>=2017.1",
@@ -59,12 +61,12 @@ setup(
                 "streamtologger>=2017.1",
                 "Unidecode>=1.0.22"
         ],
-        license="MIT License",
+        license="2-Clause BSD License",
         long_description=long_description,
         name="countries",
         package_dir={"": "src/main/python"},
         packages=["countries"],
         python_requires=">=3",
-        url="https://git.paho.at/phohenecker/country-data-gen",
+        url="https://github.com/phohenecker/country-data-gen",
         version="2018.1"
 )
