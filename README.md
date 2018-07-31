@@ -57,8 +57,8 @@ There are a few aspects to notice, however:
 
 Just like the original paper, the generator considers three different versions of the problem: S1 (easy), S2, and
 S3 (hard).
-For additional details about these as well as the train/dev/test split of the data, please refer to
-[Nickel et al. (2016)](#References).
+However, for additional details about the generation process, please refer to [Nickel et al. (2016)](#References) as
+well as the methods section of our own paper.
 
 
 Usage
