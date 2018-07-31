@@ -35,4 +35,4 @@ dependencies:
     - Unidecode>=1.0.22
     - git+https://github.com/phohenecker/arg-magic
     - git+https://github.com/phohenecker/asp-wrapper
-    - git+ssh://git@git.paho.at:22022/phohenecker/rel-data.git
+    - git+https://github.com/phohenecker/rel-data
