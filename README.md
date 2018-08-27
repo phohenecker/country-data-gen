@@ -8,8 +8,8 @@ It has been created as part of the work for the following paper, and was used to
 experiments reported in the same:
 
 > Patrick Hohenecker and Thomas Lukasiewicz.  
-> Deep Learning for Ontology Reasoning.  
-> Preprint at [https://arxiv.org/abs/1705.10342](https://arxiv.org/abs/1705.10342), 2018.
+> Ontology Reasoning with Deep Neural Networks.  
+> Preprint at [https://arxiv.org/abs/1808.07980](https://arxiv.org/abs/1808.07980) (2018).
 
 You are very welcome to use the generator for creating data for your own research.
 However, in this case, please make sure to cite the paper above.
@@ -135,8 +135,8 @@ References
 > Guillaume Bouchard, Sameer Singh, and Theo Trouillon.
 > On approximate reasoning capabilities of low-rank vector spaces.
 > In Proceedings of the 2015 AAAI Spring Symposium on Knowledge Representation and Reasoning (KRR):
-> Integrating Symbolic and Neural Approaches, 2015.
+> Integrating Symbolic and Neural Approaches (2015).
 
 > Maximilian Nickel, Lorenzo Rosasco, and Tomaso A. Poggio.
 > Holographic embeddings of knowledge graphs.
-> In Proceedings of the 30th AAAI Conference on Artificial Intelligence, 2016.
+> In Proceedings of the 30th AAAI Conference on Artificial Intelligence (2016).
