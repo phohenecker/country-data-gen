@@ -7,6 +7,7 @@ import json
 import typing
 import unittest
 
+from aspwrapper import dlv_solver
 from reldata.data import individual as ind
 from reldata.data import knowledge_graph as kg
 
@@ -51,11 +52,17 @@ __status__ = "Development"
 
 class DatasetGeneratorTest(unittest.TestCase):
     
+    DLV_PATH = "dlv.i386-apple-darwin.bin"
+    """str: The path to the DLV executable to use."""
+    
     ISO_CODE_KEY = "cca3"
     """str: The key that is used to store the ISO 3166-1 alpha-3 code for countries, e.g., 'AUT', in data files."""
     
     NEIGHBORS_KEY = "borders"
     """str: The key that is used to store a country's neighbors in data files."""
+    
+    ONTOLOGY_PATH = "src/main/asp/ontology.asp"
+    """str: The path to the ontology."""
     
     REGION_KEY = "region"
     """str: The key that is used to store a country's region in data files."""
@@ -164,7 +171,7 @@ class DatasetGeneratorTest(unittest.TestCase):
     
             s, p, o = triple
             
-            if triple.inferred or not triple.positive or s not in countries:
+            if triple.inferred or triple.prediction or not triple.positive or s not in countries:
                 continue
             
             if p.name == voc.RELATION_LOCATED_IN:
@@ -173,7 +180,7 @@ class DatasetGeneratorTest(unittest.TestCase):
                 elif o in subregions:
                     has_subregion.add(s)
                 else:
-                    raise ValueError("Encountered expected object located-in triple: ''!".format(o.name))
+                    raise ValueError("Encountered unexpected object located-in triple: ''!".format(o.name))
             elif p.name == voc.RELATION_NEIGHBOR_OF:
                 countries[s].add(o)
             else:
@@ -201,12 +208,47 @@ class DatasetGeneratorTest(unittest.TestCase):
                         for c in data
                 )
         )
+
+        # fix the names of countries, regions, and subregions in the data (DLV expects camel case)
+        # (this code snipped is taken from the DatasetGenerator's init, to make results comparable)
+        self.data = collections.OrderedDict((dg.DatasetGenerator._fix_name(k), v) for k, v in self.data.items())
+        for c in self.data.values():
+            c.name = dg.DatasetGenerator._fix_name(c.name)
+            c.region = dg.DatasetGenerator._fix_name(c.region)
+            c.subregion = None if c.subregion is None else dg.DatasetGenerator._fix_name(c.subregion)
+            c.neighbors = [dg.DatasetGenerator._fix_name(n) for n in c.neighbors]
     
     def test_generate_sample(self):
+        # create generators for all versions of the problem
+        s1_gen = dg.DatasetGenerator(
+                self.data,
+                ps.ProblemSetting.S1.value,
+                dlv_solver.DlvSolver(self.DLV_PATH),
+                self.ONTOLOGY_PATH,
+                False
+        )
+        s2_gen = dg.DatasetGenerator(
+                self.data,
+                ps.ProblemSetting.S2.value,
+                dlv_solver.DlvSolver(self.DLV_PATH),
+                self.ONTOLOGY_PATH,
+                False
+        )
+        s3_gen = dg.DatasetGenerator(
+                self.data,
+                ps.ProblemSetting.S3.value,
+                dlv_solver.DlvSolver(self.DLV_PATH),
+                self.ONTOLOGY_PATH,
+                False
+        )
+        
+        # compute country split
+        train, _, _ = s1_gen._split_countries()
+
         # generate samples for all three scenarios
-        s1_sample = dg.DatasetGenerator(self.data, ps.ProblemSetting.S1.value)._generate_sample(list(self.data.keys()))
-        s2_sample = dg.DatasetGenerator(self.data, ps.ProblemSetting.S2.value)._generate_sample(list(self.data.keys()))
-        s3_sample = dg.DatasetGenerator(self.data, ps.ProblemSetting.S3.value)._generate_sample(list(self.data.keys()))
+        s1_sample = s1_gen._generate_sample(train)
+        s2_sample = s2_gen._generate_sample(train)
+        s3_sample = s3_gen._generate_sample(train)
         
         # CHECK: the generated sample obeys the rules of the according problem settings
         self._check_s1(s1_sample)
@@ -218,7 +260,13 @@ class DatasetGeneratorTest(unittest.TestCase):
         for _ in range(20):
             
             # create a train/dev/test split
-            data_gen = dg.DatasetGenerator(self.data, ps.ProblemSetting.S1.value)
+            data_gen = dg.DatasetGenerator(
+                    self.data,
+                    ps.ProblemSetting.S1.value,
+                    dlv_solver.DlvSolver(self.DLV_PATH),
+                    self.ONTOLOGY_PATH,
+                    False
+            )
             train, dev, test = data_gen._split_countries()
 
             # CHECK: the retrieved lists are of the correct length
